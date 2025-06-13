@@ -1,9 +1,8 @@
 package main
 
 import (
+	"bankTerminal/fileSystem"
 	"fmt"
-	"os"
-	"strconv"
 	"time"
 )
 
@@ -12,58 +11,21 @@ const statementFileName = "statement.csv"
 const depositAction, withdrawAction = "DEPOSIT", "WITHDRAW"
 
 func addToStatement(actionType string, actionAmount float64, newAmount float64) {
-	_, err := os.Stat(statementFileName)
-	newFile := false
-	if err != nil {
-		newFile = true
-	}
-
-	file, err := os.OpenFile(statementFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		panic("Error opening statement")
-	}
-	defer file.Close()
-
-	if newFile {
+	isFileExist := fileSystem.IsFileExist(statementFileName)
+	if !isFileExist {
 		rowString := "Date Time, Action, Amount, Current Balance\n"
-		_, err = file.WriteString(rowString)
-		if err != nil {
-			panic("Error writing to statement")
-		}
+		fileSystem.ConcatStringToFile(statementFileName, rowString)
 	}
 
 	now := time.Now()
 	formattedTime := now.Format("2006-01-02 15:04:05")
 	rowString := fmt.Sprintf("%s, %s, %.2f, %.2f\n", formattedTime, actionType, actionAmount, newAmount)
-	_, err = file.WriteString(rowString)
-	if err != nil {
-		panic("Error writing to statement")
-	}
-}
-
-func readBalanceFromFile() (balance float64) {
-	balanceByte, err := os.ReadFile(balanceFileName)
-	if err != nil {
-		fmt.Println("New user, account initiated with balance 0!")
-		return 0
-	}
-
-	balanceString := string(balanceByte)
-	balance, err = strconv.ParseFloat(balanceString, 64)
-	if err != nil {
-		fmt.Println("Balance is corrupted, initiated with balance 0!")
-		return 0
-	}
-	return balance
-}
-
-func writeBalanceToFile(newBalance float64) {
-	os.WriteFile(balanceFileName, fmt.Append(nil, newBalance), 0664)
+	fileSystem.ConcatStringToFile(statementFileName, rowString)
 }
 
 func main() {
 	fmt.Println("Welcome to Go Bank!")
-	currentBalance := readBalanceFromFile()
+	currentBalance := fileSystem.ReadFloatFromFile(balanceFileName)
 
 	for {
 		var option float64
@@ -86,7 +48,7 @@ func main() {
 				continue
 			}
 			currentBalance += depositAmount
-			writeBalanceToFile(currentBalance)
+			fileSystem.WriteFloatToFile(balanceFileName, currentBalance)
 			addToStatement(depositAction, depositAmount, currentBalance)
 			fmt.Printf("Updated balance is: %.2f\n", currentBalance)
 		} else if option == 3 {
@@ -101,7 +63,7 @@ func main() {
 				continue
 			}
 			currentBalance -= withdrawAmount
-			writeBalanceToFile(currentBalance)
+			fileSystem.WriteFloatToFile(balanceFileName, currentBalance)
 			addToStatement(withdrawAction, withdrawAmount, currentBalance)
 			fmt.Printf("Updated balance is: %.2f\n", currentBalance)
 		} else {
