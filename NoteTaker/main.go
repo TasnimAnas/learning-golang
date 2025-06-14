@@ -12,19 +12,23 @@ func main() {
 	title, err := takeUserInput("Enter note title")
 	if err != nil {
 		fmt.Println(err)
+		return
 	}
 	content, err := takeUserInput("Enter note content")
 	if err != nil {
 		fmt.Println(err)
+		return
 	}
 	userNote, err := note.New(title, content)
 	if err != nil {
 		fmt.Println(err)
+		return
 	}
 	userNote.Display()
 	err = userNote.SaveJSON()
 	if err != nil {
 		fmt.Println(err)
+		return
 	}
 	fmt.Println("Note saved!")
 
